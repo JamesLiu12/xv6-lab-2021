@@ -26,6 +26,20 @@ extern char trampoline[]; // trampoline.S
 // must be acquired before any p->lock.
 struct spinlock wait_lock;
 
+//count the number of process whose state is not UNUSED
+uint64 num_proc(void){
+  struct proc *p;
+  uint64 res = 0;
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->state != UNUSED){
+      res++; 
+    }
+    release(&p->lock);
+  }
+  return res;
+}
+
 // Allocate a page for each process's kernel stack.
 // Map it high in memory, followed by an invalid
 // guard page.
@@ -163,6 +177,7 @@ freeproc(struct proc *p)
   p->chan = 0;
   p->killed = 0;
   p->xstate = 0;
+  p->trace_mask = 0;
   p->state = UNUSED;
 }
 
@@ -288,7 +303,7 @@ fork(void)
     return -1;
   }
   np->sz = p->sz;
-
+  
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 
@@ -301,14 +316,10 @@ fork(void)
       np->ofile[i] = filedup(p->ofile[i]);
   np->cwd = idup(p->cwd);
 
-  for(int i = 0; i < MAXVMA; i++){
-    if(p->vma_table[i].mapped){
-      memmove(&np->vma_table[i], &p->vma_table[i], sizeof(struct vma));
-      filedup(np->vma_table[i].f);
-    }
-  }
-
   safestrcpy(np->name, p->name, sizeof(p->name));
+
+  //copy trace_mask to child
+  np->trace_mask = p->trace_mask;
 
   pid = np->pid;
 
@@ -322,6 +333,7 @@ fork(void)
   np->state = RUNNABLE;
   release(&np->lock);
 
+  np->trace_mask = p->trace_mask;
   return pid;
 }
 
@@ -357,18 +369,6 @@ exit(int status)
       struct file *f = p->ofile[fd];
       fileclose(f);
       p->ofile[fd] = 0;
-    }
-  }
-
-  struct vma *pvma;
-  for(int i = 0; i < MAXVMA; i++){
-    pvma = &p->vma_table[i];
-    if(pvma->mapped){
-      //uvmunmap(p->pagetable, pvma->addr, pvma->len / PGSIZE, 0);
-      //memset(pvma, 0, sizeof(struct vma));
-      if(munmap(pvma->addr, pvma->len) < 0){
-        panic("exit munmap");
-      }
     }
   }
 
@@ -671,5 +671,15 @@ procdump(void)
       state = "???";
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
+  }
+}
+
+void 
+procnum(uint64* num)
+{
+  *num = 0;
+  struct proc *p;
+  for (p = proc; p < &proc[NPROC]; p++) {
+    if (p->state != UNUSED) (*num)++;
   }
 }

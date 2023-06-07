@@ -29,7 +29,6 @@ int             exec(char*, char**);
 struct file*    filealloc(void);
 void            fileclose(struct file*);
 struct file*    filedup(struct file*);
-struct file*    fileundup(struct file*);
 void            fileinit(void);
 int             fileread(struct file*, uint64, int n);
 int             filestat(struct file*, uint64 addr);
@@ -64,6 +63,7 @@ void            ramdiskrw(struct buf*);
 void*           kalloc(void);
 void            kfree(void *);
 void            kinit(void);
+uint64          size_free();
 
 // log.c
 void            initlog(int, struct superblock*);
@@ -94,6 +94,7 @@ int             kill(int);
 struct cpu*     mycpu(void);
 struct cpu*     getmycpu(void);
 struct proc*    myproc();
+uint64 	 	num_proc(void);
 void            procinit(void);
 void            scheduler(void) __attribute__((noreturn));
 void            sched(void);
@@ -139,9 +140,6 @@ int             argaddr(int, uint64 *);
 int             fetchstr(uint64, char*, int);
 int             fetchaddr(uint64, uint64*);
 void            syscall();
-
-// sysfile.c
-uint64          munmap(uint64, int);
 
 // trap.c
 extern uint     ticks;
