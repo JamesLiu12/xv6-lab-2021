@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "cstdio": "c",
+        "proc.h": "c",
+        "sysinfo.h": "c",
+        "types.h": "c",
+        "freebytes.h": "c"
+    }
+}

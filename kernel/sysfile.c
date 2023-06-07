@@ -16,6 +16,7 @@
 #include "file.h"
 #include "fcntl.h"
 #include "sysinfo.h"
+#include "freebytes.h"
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -119,16 +120,14 @@ sys_fstat(void)
 uint64
 sys_sysinfo(void)
 {
-  uint64 addr;
-  struct proc *p = myproc();
-  struct sysinfo sinfo;
-  sinfo.freemem = size_free();
-  sinfo.nproc = num_proc();
-  if(argaddr(0, &addr) < 0)
-    return -1;
-  if(copyout(p->pagetable, addr, (char *)&sinfo, sizeof(sinfo)) < 0)
-    return -1;
-  return 0;
+  struct sysinfo info;
+  freebytes(&info.freemem);
+  procnum(&info.nproc);
+  
+  uint64 viraddr;
+  argaddr(0, &viraddr);
+
+  return copyout(myproc()->pagetable, viraddr, (char *) &info, sizeof info);
 }
 
 // Create the path new as a link to the same inode as old.

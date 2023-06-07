@@ -130,33 +130,34 @@ static uint64 (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_trace]   sys_trace,
-[SYS_sysinfo]    sys_sysinfo,
+[SYS_sysinfo] sys_sysinfo
 };
 
-static char* num_syscall[23] = {
-"fork",
-"exit",
-"wait",
-"pipe",
-"read",
-"kill",
-"exec",
-"fstat",
-"chdir",
-"dup",
-"getpid",
-"sbrk",
-"sleep",
-"uptime",
-"open",
-"write",
-"mknod",
-"unlink",
-"link",
-"mkdir",
-"close",
-"trace",
-"sysinfo"
+
+static char *syscalls_name[] = {
+[SYS_fork]    "fork",
+[SYS_exit]    "exit",
+[SYS_wait]    "wait",
+[SYS_pipe]    "pipe",
+[SYS_read]    "read",
+[SYS_kill]    "kill",
+[SYS_exec]    "exec",
+[SYS_fstat]   "fstat",
+[SYS_chdir]   "chdir",
+[SYS_dup]     "dup",
+[SYS_getpid]  "getpid",
+[SYS_sbrk]    "sbrk",
+[SYS_sleep]   "sleep",
+[SYS_uptime]  "uptime",
+[SYS_open]    "open",
+[SYS_write]   "write",
+[SYS_mknod]   "mknod",
+[SYS_unlink]  "unlink",
+[SYS_link]    "link",
+[SYS_mkdir]   "mkdir",
+[SYS_close]   "close",
+[SYS_trace]   "trace",
+[SYS_sysinfo] "sysinfo"
 };
 
 void
@@ -168,16 +169,10 @@ syscall(void)
   num = p->trapframe->a7;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     p->trapframe->a0 = syscalls[num]();
-    //int i;
-    //for(i = 1; i <= 22; i++){
-    //  int mask = 1 << i;
-    //  if(mask > p->trace_mask){
-    //    break;
-    //  }
-    //  if(mask & p->trace_mask){
-    if((1 << num) & p->trace_mask){ 
-       printf("%d: syscall %s -> %d\n", p->pid, num_syscall[num-1], p->trapframe->a0);
-      } 
+
+    //Call trace if the function is required to trace
+    if ((1 << num) & p->trace_mask) printf("%d: syscall %s -> %d\n", p->pid, syscalls_name[num], p->trapframe->a0);
+
   } else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);
